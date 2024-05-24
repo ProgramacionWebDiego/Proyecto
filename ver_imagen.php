@@ -15,7 +15,6 @@ if ($conexion->connect_error) {
     die("Conexión fallida: " . $conexion->connect_error);
 }
 
-// Verificar si ya se han registrado los "Me gusta" y "visitadas" para esta sesión
 if (!isset($_SESSION["megusta"])) {
     $_SESSION["megusta"] = array();
 }
@@ -27,9 +26,7 @@ if (!isset($_SESSION["visitadas"])) {
 if (isset($_GET['id'])) {
     $id = intval($_GET['id']);
 
-    // Procesar el formulario de comentarios solo si se envió
     if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["comentario"])) {
-        // Verificar si usuario_id está configurado en la sesión
         if (isset($_SESSION["usuario_id"])) {
             $usuario_id = $_SESSION["usuario_id"];
             $subida_id = $id;
@@ -41,7 +38,6 @@ if (isset($_GET['id'])) {
             $stmt_insertar_comentario->bind_param("iiss", $usuario_id, $subida_id, $comentario, $hora_actual);
 
             if ($stmt_insertar_comentario->execute()) {
-                // Redireccionar para evitar reenvío del formulario
                 header("Location: ver_imagen.php?id=" . $id);
                 exit();
             } else {
@@ -54,13 +50,10 @@ if (isset($_GET['id'])) {
         }
     }
 
-    // Procesar el botón "Me gusta" solo si se ha enviado
     if (isset($_POST["like_button"])) {
-        // Verificar si usuario_id está configurado en la sesión
         if (isset($_SESSION["usuario_id"])) {
             $usuario_id = $_SESSION["usuario_id"];
 
-            // Si esta imagen ya tiene "Me gusta" de este usuario, quitar el "Me gusta"
             if (in_array($id, $_SESSION["megusta"])) {
                 $key = array_search($id, $_SESSION["megusta"]);
                 unset($_SESSION["megusta"][$key]);
@@ -71,7 +64,6 @@ if (isset($_GET['id'])) {
                 $stmt_quitar_like->execute();
                 $stmt_quitar_like->close();
             } else {
-                // Si aún no ha dado "Me gusta", agregarlo
                 array_push($_SESSION["megusta"], $id);
 
                 $sql_dar_like = "INSERT INTO likes (usuario_id, subida_id) VALUES (?, ?)";
@@ -80,13 +72,11 @@ if (isset($_GET['id'])) {
                 $stmt_dar_like->execute();
                 $stmt_dar_like->close();
             }
-            // Redireccionar después de dar like para evitar reenvío del formulario al recargar la página
             header("Location: ver_imagen.php?id=" . $id);
             exit();
         }
     }
 
-    // Incrementar el contador de visitas solo si esta imagen aún no ha sido visitada en esta sesión
     if (!in_array($id, $_SESSION["visitadas"])) {
         array_push($_SESSION["visitadas"], $id);
 
@@ -97,7 +87,6 @@ if (isset($_GET['id'])) {
         $stmt_incrementar_visitas->close();
     }
 
-    // Consultar los detalles de la imagen
     $sql = "SELECT s.id, s.usuario_id, s.nombre_archivo, s.titulo, s.texto, s.fecha_subida, s.visitas, u.nombre AS nombre_usuario 
             FROM subida AS s
             INNER JOIN usuarios AS u ON s.usuario_id = u.id
